@@ -21,13 +21,14 @@ const config = {
   ],
 };
 
-const layout = new GoldenLayout(
-  config,
-  document.getElementById("layoutContainer")
-);
+const layout = new GoldenLayout(document.getElementById("layoutContainer"));
 
-layout.registerComponent("example", (container, state) => {
+layout.registerComponentFactoryFunction("example", (container, state) => {
   container.element.innerHTML = `<h2>${state.text}</h2>`;
 });
 
-layout.init();
+layout.loadLayout(config);
+
+window.addEventListener("resize", () => {
+  layout.setSize();
+});
