@@ -1,0 +1,9 @@
+@import "golden-layout/dist/css/goldenlayout-base.css";
+@import "golden-layout/dist/css/themes/goldenlayout-dark-theme.css";
+
+html,
+body,
+#layoutContainer {
+  height: 100%;
+  margin: 0;
+}
