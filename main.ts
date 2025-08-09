@@ -1,4 +1,4 @@
-import { GoldenLayout, ComponentContainer, LayoutConfig } from "golden-layout";
+import { GoldenLayout, LayoutConfig } from "golden-layout";
 import "./styles.css";
 import { components } from "./components.js";
 
@@ -8,6 +8,25 @@ const layoutElement: HTMLElement | null =
 
 if (menuContainerElement && layoutElement) {
   const goldenLayout = new GoldenLayout(layoutElement);
+
+  const defaultConfig: LayoutConfig = {
+    root: {
+      type: "row",
+      content: [],
+    },
+  };
+
+  var savedState = localStorage.getItem("savedState");
+  var layoutConfig: LayoutConfig;
+
+  if (savedState) {
+    console.log("Previous state restored");
+    const resolvedConfig = JSON.parse(savedState);
+    layoutConfig = LayoutConfig.fromResolved(resolvedConfig);
+  } else {
+    console.log("No saved state, loading default layout");
+    layoutConfig = defaultConfig;
+  }
 
   components.forEach((c) => {
     goldenLayout.registerComponentFactoryFunction(c.type, c.factory);
@@ -21,29 +40,14 @@ if (menuContainerElement && layoutElement) {
     });
   });
 
-  class MyComponent {
-    rootElement: HTMLElement;
-
-    constructor(public container: ComponentContainer) {
-      this.rootElement = container.element;
-      this.rootElement.innerHTML =
-        "<h2>" + "Component Type: MyComponent" + "</h2>";
-    }
-  }
-
-  const myLayout: LayoutConfig = {
-    root: {
-      type: "row",
-      content: [],
-    },
-  };
-
   window.addEventListener("resize", () => {
     goldenLayout.updateRootSize();
   });
 
+  goldenLayout.on("stateChanged", function () {
+    const state = goldenLayout.saveLayout();
+    localStorage.setItem("savedState", JSON.stringify(state));
+  });
 
-  goldenLayout.registerComponentConstructor("MyComponent", MyComponent);
-
-  goldenLayout.loadLayout(myLayout);
+  goldenLayout.loadLayout(layoutConfig);
 }
