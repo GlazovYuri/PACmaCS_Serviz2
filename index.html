@@ -5,21 +5,10 @@
     <title>Golden Layout Example</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/main.ts"></script>
   </head>
   <body>
-    <header class="site-header">
-      <div class="dropdown">
-        <button class="dropbtn">Меню ▼</button>
-        <ul id="menu">
-          <!-- пункты меню будут добавлены динамически -->
-        </ul>
-      </div>
-
-      <h1 class="site-title">Мой сайт</h1>
-
-      <button class="action-btn">Кнопка</button>
-    </header>
+    <ul id="menuContainer"></ul>
     <div id="layoutContainer"></div>
-    <script type="module" src="/main.js"></script>
   </body>
 </html>
