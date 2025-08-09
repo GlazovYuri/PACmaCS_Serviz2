@@ -1,6 +1,7 @@
 import { GoldenLayout, LayoutConfig } from "golden-layout";
 import "./styles.css";
 import { components } from "./components.js";
+import { setupDropdownToggle } from "./ui";
 
 const menuContainerElement = document.querySelector("#menuContainer");
 const layoutElement: HTMLElement | null =
@@ -50,4 +51,6 @@ if (menuContainerElement && layoutElement) {
   });
 
   goldenLayout.loadLayout(layoutConfig);
+
+  setupDropdownToggle();
 }

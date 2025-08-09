@@ -1,13 +1,6 @@
 @import "golden-layout/dist/css/goldenlayout-base.css";
 @import "golden-layout/dist/css/themes/goldenlayout-dark-theme.css";
 
-h2 {
-  font: 24px Arial, sans-serif;
-  color: #fff;
-  padding: 10px;
-  text-align: center;
-}
-
 html,
 body {
   height: 100%;
@@ -28,13 +21,28 @@ body {
 #menuContainer {
   width: 15%;
   height: 100%;
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   background: #222;
+  overflow-y: auto;
 }
 
-#menuContainer li {
+#bottomMenuContainer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 15%;
+  height: 15%;
+  background: #222;
+  box-sizing: border-box;
+  border-top: 2px solid #111;
+  overflow-y: auto;
+}
+
+* li,
+#toggleButton {
   border-bottom: 1px solid #000;
   border-top: 1px solid #333;
   cursor: pointer;
@@ -44,9 +52,21 @@ body {
   font: 12px Arial, sans-serif;
 }
 
-#menuContainer li:hover {
+* li:hover {
   background: #111;
   color: #ccc;
+}
+
+#buttonList button {
+  color: #bbb;
+  background: #1a1a1a;
+  display: block;
+  margin: 5px 15px 5px;
+  padding: 8px 12px;
+  border-left: 5;
+  width: 80%;
+  font-size: 14px;
+  cursor: pointer;
 }
 
 #layoutContainer {
