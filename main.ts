@@ -1,6 +1,6 @@
 import { GoldenLayout, LayoutConfig } from "golden-layout";
 import "./styles.css";
-import { components } from "./components.js";
+import { loadComponents } from "./loadComponents.js";
 import { setupDropdownToggle } from "./ui";
 
 const menuContainerElement = document.querySelector("#menuContainer");
@@ -29,15 +29,19 @@ if (menuContainerElement && layoutElement) {
     layoutConfig = defaultConfig;
   }
 
+  const components = loadComponents();
+
+  console.log("All components found:", components);
+
   components.forEach((c) => {
-    goldenLayout.registerComponentFactoryFunction(c.type, c.factory);
+    goldenLayout.registerComponentFactoryFunction(c.name, c.factory);
 
     const newItem = document.createElement("li");
-    newItem.textContent = c.type;
+    newItem.textContent = c.name;
     menuContainerElement.appendChild(newItem);
 
     newItem.addEventListener("click", () => {
-      goldenLayout.addComponent(c.type, c.factory);
+      goldenLayout.addComponent(c.name, c.factory);
     });
   });
 
