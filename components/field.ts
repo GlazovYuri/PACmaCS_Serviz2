@@ -40,8 +40,9 @@ const Field: Component = {
     let dragStartY = 0;
 
     // Settings of display with coords
-    const pt = svg.createSVGPoint();
+
     svg.addEventListener("mousemove", (e) => {
+      const pt = svg.createSVGPoint();
       pt.x = e.clientX;
       pt.y = e.clientY;
       const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
@@ -58,28 +59,29 @@ const Field: Component = {
     function updateTransform() {
       svg.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
     }
-    window.addEventListener(
+    container.element.addEventListener(
       "wheel",
       (e) => {
         e.preventDefault();
 
         const rect = svg.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
 
         const scaleFactor = e.deltaY > 0 ? 1 / 1.1 : 1.1;
         const newScale = Math.min(Math.max(scale * scaleFactor, 0.1), 10);
 
-        originX = mouseX - ((mouseX - originX) * newScale) / scale;
-        originY = mouseY - ((mouseY - originY) * newScale) / scale;
+        originX +=
+          (e.clientX - (rect.left + rect.right) / 2) * (1 - scaleFactor);
+        originY +=
+          (e.clientY - (rect.top + rect.bottom) / 2) * (1 - scaleFactor);
+        coordsDisplay.textContent = `${e.clientX}, ${rect.left}, ${originX}`;
 
         scale = newScale;
-
         updateTransform();
       },
       { passive: false }
     );
-    window.addEventListener("mousedown", (e) => {
+    container.element.addEventListener("mousedown", (e) => {
+      e.preventDefault();
       isDragging = true;
       dragStartX = e.clientX - originX;
       dragStartY = e.clientY - originY;
