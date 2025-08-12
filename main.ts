@@ -31,7 +31,7 @@ if (menuContainerElement && layoutElement) {
 
   const components = loadComponents();
 
-  console.log("All components found:", components);
+  console.log("All components that could be found:", components);
 
   components.forEach((c) => {
     goldenLayout.registerComponentFactoryFunction(c.name, c.factory);
