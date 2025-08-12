@@ -5,6 +5,8 @@ html,
 body {
   height: 100%;
   margin: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 body {
@@ -26,6 +28,7 @@ body {
   left: 0;
   background: #222;
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 #bottomMenuContainer {
@@ -36,15 +39,18 @@ body {
   width: 15%;
   height: 15%;
   background: #222;
-  box-sizing: border-box;
   border-top: 2px solid #111;
   overflow-y: auto;
+  box-sizing: border-box;
+
+  scrollbar-width: thin;
+  scrollbar-color: #555 #1e1e1e;
 }
 
-* li,
-#toggleButton {
+* li {
   border-bottom: 1px solid #000;
   border-top: 1px solid #333;
+
   cursor: pointer;
   padding: 10px 5px;
   color: #bbb;
@@ -52,20 +58,34 @@ body {
   font: 12px Arial, sans-serif;
 }
 
-* li:hover {
+#toggleButton,
+#buttonList button {
+  border-width: 1px;
+  cursor: pointer;
+  padding: 10px 5px;
+  color: #bbb;
+  background: #1a1a1a;
+  font: 12px Arial, sans-serif;
+}
+
+#toggleButton:active,
+#buttonList button:active {
+  border-left-color: #222;
+}
+
+#menuContainer li:hover,
+#toggleButton:hover,
+#buttonList button:hover {
   background: #111;
   color: #ccc;
 }
 
 #buttonList button {
-  color: #bbb;
-  background: #1a1a1a;
   display: block;
   margin: 5px 15px 5px;
-  padding: 8px 12px;
-  border-left: 5;
+  padding: 5px;
   width: 80%;
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -73,8 +93,9 @@ body {
   flex: 1;
   width: 85%;
   height: 100%;
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 15%;
   box-shadow: -3px 0px 9px 0px rgba(0, 0, 0, 0.4);
+  box-sizing: border-box;
 }
