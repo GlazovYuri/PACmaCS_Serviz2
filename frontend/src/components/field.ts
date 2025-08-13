@@ -169,7 +169,7 @@ function drawField(svg: SVGSVGElement, cfg: FieldConfig): void {
   svg.appendChild(circle);
 
   const center = document.createElementNS(svgNS, "circle");
-  center.setAttribute("r", String(25));
+  center.setAttribute("r", "25");
   center.setAttribute("fill", "white");
   svg.appendChild(center);
 
@@ -222,4 +222,14 @@ function drawField(svg: SVGSVGElement, cfg: FieldConfig): void {
   rightPenalty.setAttribute("stroke", "white");
   rightPenalty.setAttribute("stroke-width", lineWidth);
   svg.appendChild(rightPenalty);
+
+  const text = document.createElementNS(svgNS, "text");
+  text.setAttribute("x", "0");
+  text.setAttribute("y", "0");
+  text.setAttribute("fill", "#88dd00");
+  text.setAttribute("font-size", "1000");
+  text.setAttribute("text-anchor", "middle");
+  text.setAttribute("dominant-baseline", "middle");
+  text.textContent = "NO DATA";
+  svg.appendChild(text);
 }
