@@ -1,3 +1,4 @@
+import "./socketManager";
 import { GoldenLayout, LayoutConfig } from "golden-layout";
 import "./styles.css";
 import { loadComponents } from "./loadComponents.js";

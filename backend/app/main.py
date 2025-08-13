@@ -162,7 +162,7 @@ def relay_data(sio: SocketIO):
                     break
                 else:
                     raise
-
+        
         sio.emit("update_sprites", sprite_store.fetch())
         sio.emit("update_telemetry", telemetry_store.fetch())
 
@@ -180,5 +180,5 @@ if __name__ == "__main__":
     )
     sio.start_background_task(target=lambda: relay_data(sio))
     sio.run(
-        app, host="0.0.0.0", port=8001, debug=False, allow_unsafe_werkzeug=True
+        app, host="0.0.0.0", port=8100, debug=False, allow_unsafe_werkzeug=True
     )

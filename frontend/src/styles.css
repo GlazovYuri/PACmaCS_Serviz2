@@ -59,7 +59,7 @@ body {
 }
 
 #toggleButton,
-#buttonList button {
+* button {
   border-width: 1px;
   cursor: pointer;
   padding: 10px 5px;
@@ -68,19 +68,23 @@ body {
   font: 12px Arial, sans-serif;
 }
 
+#toggleButton {
+  font: 15px Arial, sans-serif;
+}
+
 #toggleButton:active,
-#buttonList button:active {
+* button:active {
   border-left-color: #222;
 }
 
 #menuContainer li:hover,
 #toggleButton:hover,
-#buttonList button:hover {
+* button:hover {
   background: #111;
   color: #ccc;
 }
 
-#buttonList button {
+* button {
   display: block;
   margin: 5px 15px 5px;
   padding: 5px;
@@ -97,5 +101,25 @@ body {
   top: 0;
   left: 15%;
   box-shadow: -3px 0px 9px 0px rgba(0, 0, 0, 0.4);
+  box-sizing: border-box;
+}
+
+* select {
+  overflow: auto;
+  background: #1a1a1a;
+  color: #b0b0b0;
+  border: 1px solid #222;
+  box-sizing: border-box;
+  margin: 5;
+}
+
+* pre {
+  overflow: auto;
+  width: 99.9%;
+  background: #1a1a1a;
+  color: #b0b0b0;
+  padding: 5px;
+  border: 1px solid #555;
+  margin: 0;
   box-sizing: border-box;
 }

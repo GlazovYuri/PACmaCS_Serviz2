@@ -1,5 +1,5 @@
 import Component from "../loadComponents";
-import { io } from "socket.io-client";
+import { bus, subscribeToTopic, sendMessage } from "../socketManager";
 
 const Telemetry: Component = {
   name: "Telemetry",
@@ -8,22 +8,30 @@ const Telemetry: Component = {
     container.element.style.flexDirection = "column";
     container.element.style.height = "100%";
 
-    const select = document.createElement("select");
-    select.style.marginBottom = "10px";
-    container.element.appendChild(select);
+    const wrapper = document.createElement("div");
+    wrapper.style.display = "flex";
+    wrapper.style.alignItems = "center";
+    wrapper.style.marginBottom = "10px";
+
+    const selectTopic = document.createElement("select");
+    selectTopic.style.height = "30px";
+    selectTopic.style.width = "100%";
+    const clearButton = document.createElement("button");
+    clearButton.textContent = "Clear telemetry";
+    clearButton.style.height = "30px";
+    clearButton.style.width = "100px";
+    clearButton.style.flex = "0 0 auto";
+
+    wrapper.appendChild(selectTopic);
+    wrapper.appendChild(clearButton);
+    container.element.appendChild(wrapper);
 
     const telemetryBox = document.createElement("pre");
     telemetryBox.style.flexGrow = "1";
-    telemetryBox.style.overflow = "auto";
-    telemetryBox.style.background = "#1e1e1e";
-    telemetryBox.style.color = "#dcdcdc";
-    telemetryBox.style.padding = "10px";
-    telemetryBox.style.border = "1px solid #555";
-    telemetryBox.style.margin = "0";
     container.element.appendChild(telemetryBox);
 
     let currentTopic = "";
-    const telemetryData: Record<string, any> = {};
+    let telemetryData: Record<string, any> = {};
 
     function getText(currentTopic: string): string {
       if (currentTopic in telemetryData) {
@@ -37,38 +45,40 @@ const Telemetry: Component = {
       return "";
     }
 
-    const socket = io("http://localhost:8001");
+    subscribeToTopic("update_telemetry");
 
-    socket.on("connect", () => {
-      console.log("Connected to backend");
-    });
-    socket.on("disconnect", () => {
-      console.log("Disconnected from backend");
-    });
+    bus.on("update_telemetry", (data) => {
+      telemetryData = data;
 
-    socket.on("update_telemetry", (data) => {
-      Object.assign(telemetryData, data);
+      const previousTopic = currentTopic;
 
+      selectTopic.innerHTML = "";
       Object.keys(data).forEach((topic) => {
-        if (![...select.options].some((opt) => opt.value === topic)) {
-          const option = document.createElement("option");
-          option.value = topic;
-          option.textContent = topic;
-          select.appendChild(option);
-        }
+        const option = document.createElement("option");
+        option.value = topic;
+        option.textContent = topic;
+        selectTopic.appendChild(option);
       });
 
-      if (!currentTopic && select.options.length > 0) {
-        currentTopic = select.options[0].value;
-        select.value = currentTopic;
+      if (previousTopic && data[previousTopic] !== undefined) {
+        currentTopic = previousTopic;
+      } else if (selectTopic.options.length > 0) {
+        currentTopic = selectTopic.options[0].value;
       }
 
+      selectTopic.value = currentTopic;
       telemetryBox.textContent = getText(currentTopic);
     });
 
-    select.addEventListener("change", () => {
-      currentTopic = select.value;
+    selectTopic.addEventListener("change", () => {
+      currentTopic = selectTopic.value;
       telemetryBox.textContent = getText(currentTopic);
+    });
+
+    clearButton.addEventListener("click", () => {
+      sendMessage("clear_telemetry", "");
+      currentTopic = "";
+      selectTopic.innerHTML = "";
     });
   },
 };
