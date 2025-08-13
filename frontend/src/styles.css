@@ -8,6 +8,8 @@ body {
   overflow-x: hidden;
   overflow-y: hidden;
   background: #1a1a1a;
+  scrollbar-width: thin;
+  scrollbar-color: #555 #1e1e1e;
 }
 
 body {
@@ -43,9 +45,6 @@ body {
   border-top: 2px solid #111;
   overflow-y: auto;
   box-sizing: border-box;
-
-  scrollbar-width: thin;
-  scrollbar-color: #555 #1e1e1e;
 }
 
 * li {
