@@ -1,4 +1,5 @@
 import Component from "../loadComponents";
+import { bus, subscribeToTopic, sendMessage } from "../socketManager";
 
 const Field: Component = {
   name: "Field",
@@ -97,6 +98,25 @@ const Field: Component = {
     });
 
     updateTransform();
+
+    subscribeToTopic("update_geometry");
+    bus.on("update_geometry", (data) => {
+      console.log("Update field with new data:", data);
+      fieldConfig = {
+        width: data.length,
+        height: data.width,
+        leftGoalColor: "#FFFF00",
+        rightGoalColor: "#0000FF",
+        goalWidth: data.goalWidth,
+        goalDepth: data.goalDepth,
+        penaltyAreaWidth: data.penaltyAreaWidth,
+        penaltyAreaDepth: data.penaltyAreaDepth,
+        centerCircleRadius: data.centerCircleRadius,
+        borderSize: data.borderSize,
+      };
+      drawField(svg, fieldConfig);
+      updateTransform();
+    });
   },
 };
 
@@ -124,7 +144,7 @@ const defaultFieldCfg: FieldConfig = {
   goalDepth: 180,
   penaltyAreaWidth: 2000,
   penaltyAreaDepth: 1000,
-  centerCircleRadius: 1000,
+  centerCircleRadius: 500,
   borderSize: 250,
 };
 
@@ -132,6 +152,10 @@ function drawField(svg: SVGSVGElement, cfg: FieldConfig): void {
   const fieldColor = "#27bb27";
   const lineWidth = "10";
   const goalLineWidth = 40;
+
+  while (svg.firstChild) {
+    svg.removeChild(svg.firstChild);
+  }
 
   const svgNS = "http://www.w3.org/2000/svg";
 

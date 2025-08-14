@@ -1,3 +1,5 @@
+from multiprocessing import Lock
+from typing import Optional
 from flask import Flask, render_template
 from flask_socketio import SocketIO
 
@@ -34,6 +36,10 @@ import zmq
 sprite_store = BGStore()
 telemetry_store = BGStore()
 
+geometry_lock = Lock()
+geometry_data: dict = {}
+geometry_data_updated: bool = True
+
 context = zmq.Context()
 s_signals = context.socket(zmq.PUB)
 s_signals.connect(config["ether"]["s_signals_sub_url"])
@@ -46,6 +52,14 @@ def update_layer(layer_name, data):
 def update_telemetry_data(data):
     telemetry_store.write(data)
 
+def update_geometry_data(data):
+    with geometry_lock:
+        global geometry_data, geometry_data_updated
+        if geometry_data != data:
+            print("update", geometry_data, data)
+            geometry_data = data
+            geometry_data_updated = True
+
 
 @app.route("/")
 def index():
@@ -56,6 +70,7 @@ def index():
 @sio.on("connect")
 def connect():
     print(f"Client connected")
+    sio.emit("update_geometry", geometry_data)
     sio.emit("update_version", version)
 
 
@@ -138,6 +153,30 @@ def update_telemetry():
 
         telemetry_store.switch()
 
+def update_geometry():
+    print("Update geometry enter")
+
+    context = zmq.Context()
+
+    s_geometry = context.socket(zmq.SUB)
+    s_geometry.connect(config["ether"]["s_geometry_pub_url"])
+    s_geometry.setsockopt_string(zmq.SUBSCRIBE, "")
+
+    print("Geometry socket setup as SUB at ", config["ether"]["s_geometry_pub_url"])
+
+    while True:
+        sio.sleep(0.01)
+
+        for _ in range(100):
+            try:
+                message = s_geometry.recv_json(flags=zmq.NOBLOCK)
+                update_geometry_data(message)
+            except zmq.ZMQError as e:
+                if e.errno == zmq.EAGAIN:
+                    break
+                else:
+                    raise
+
 
 def relay_data(sio: SocketIO):
     print("Data relay enter")
@@ -165,6 +204,11 @@ def relay_data(sio: SocketIO):
         
         sio.emit("update_sprites", sprite_store.fetch())
         sio.emit("update_telemetry", telemetry_store.fetch())
+        
+        global geometry_data_updated, geometry_data
+        if geometry_data_updated:
+            sio.emit("update_geometry", geometry_data)
+            geometry_data_updated = False
 
 
 # Run the app
@@ -177,6 +221,9 @@ if __name__ == "__main__":
     )
     sio.start_background_task(
         target=lambda: update_telemetry()
+    )
+    sio.start_background_task(
+        target=lambda: update_geometry()
     )
     sio.start_background_task(target=lambda: relay_data(sio))
     sio.run(
