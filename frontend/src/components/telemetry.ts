@@ -1,5 +1,6 @@
 import Component from "../loadComponents";
 import { bus, subscribeToTopic, sendMessage } from "../socketManager";
+import CustomDropdown from "../customDropdown";
 
 const Telemetry: Component = {
   name: "Telemetry",
@@ -13,16 +14,21 @@ const Telemetry: Component = {
     wrapper.style.alignItems = "center";
     wrapper.style.marginBottom = "10px";
 
-    const selectTopic = document.createElement("select");
-    selectTopic.style.height = "30px";
-    selectTopic.style.width = "100%";
+    const selectDropdown = new CustomDropdown({
+      options: [],
+      onChange: (value) => {
+        currentTopic = value;
+        telemetryBox.textContent = getText(currentTopic);
+      },
+    });
     const clearButton = document.createElement("button");
     clearButton.textContent = "Clear telemetry";
     clearButton.style.height = "30px";
     clearButton.style.width = "100px";
     clearButton.style.flex = "0 0 auto";
+    clearButton.style.margin = "1px 10px 0px 10px ";
 
-    wrapper.appendChild(selectTopic);
+    wrapper.appendChild(selectDropdown.element);
     wrapper.appendChild(clearButton);
     container.element.appendChild(wrapper);
 
@@ -42,7 +48,7 @@ const Telemetry: Component = {
           return JSON.stringify(data, null, 2);
         }
       }
-      return "";
+      return "No telemetry right now";
     }
 
     subscribeToTopic("update_telemetry");
@@ -51,34 +57,25 @@ const Telemetry: Component = {
       telemetryData = data;
 
       const previousTopic = currentTopic;
+      const newOptions = Object.keys(data).map((t) => ({ value: t }));
 
-      selectTopic.innerHTML = "";
-      Object.keys(data).forEach((topic) => {
-        const option = document.createElement("option");
-        option.value = topic;
-        option.textContent = topic;
-        selectTopic.appendChild(option);
-      });
+      selectDropdown.updateOptions(newOptions);
 
       if (previousTopic && data[previousTopic] !== undefined) {
         currentTopic = previousTopic;
-      } else if (selectTopic.options.length > 0) {
-        currentTopic = selectTopic.options[0].value;
+      } else if (newOptions.length > 0) {
+        currentTopic = newOptions[0].value;
       }
 
-      selectTopic.value = currentTopic;
-      telemetryBox.textContent = getText(currentTopic);
-    });
-
-    selectTopic.addEventListener("change", () => {
-      currentTopic = selectTopic.value;
+      selectDropdown.updateOptions(newOptions);
       telemetryBox.textContent = getText(currentTopic);
     });
 
     clearButton.addEventListener("click", () => {
       sendMessage("clear_telemetry", "");
       currentTopic = "";
-      selectTopic.innerHTML = "";
+      selectDropdown.updateOptions([]);
+      telemetryBox.textContent = "No telemetry right now";
     });
   },
 };
