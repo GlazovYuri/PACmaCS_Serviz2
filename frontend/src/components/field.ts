@@ -10,15 +10,24 @@ const Field: Component = {
 
     // Create field svg
     const svgNS = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(svgNS, "svg");
-    svg.setAttribute("width", "100%");
-    svg.setAttribute("height", "100%");
-    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-    svg.style.display = "block";
-    svg.style.userSelect = "none";
-    svg.style.touchAction = "none";
-    drawField(svg, fieldConfig);
-    container.element.append(svg);
+    const fieldSvg = document.createElementNS(svgNS, "svg");
+    fieldSvg.style.position = "absolute";
+    fieldSvg.style.top = "0";
+    fieldSvg.style.left = "0";
+    fieldSvg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    fieldSvg.style.display = "block";
+    fieldSvg.style.userSelect = "none";
+    fieldSvg.style.touchAction = "none";
+
+    fieldSvg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    container.element.append(fieldSvg);
+
+    const drawingSvg = document.createElementNS(svgNS, "svg");
+    drawingSvg.style.position = "absolute";
+    drawingSvg.style.top = "0";
+    drawingSvg.style.left = "0";
+    drawingSvg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    container.element.append(drawingSvg);
 
     // Create display with coords
     const coordsDisplay = document.createElement("div");
@@ -42,30 +51,31 @@ const Field: Component = {
 
     // Settings of display with coords
 
-    svg.addEventListener("mousemove", (e) => {
-      const pt = svg.createSVGPoint();
+    fieldSvg.addEventListener("mousemove", (e) => {
+      const pt = fieldSvg.createSVGPoint();
       pt.x = e.clientX;
       pt.y = e.clientY;
-      const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+      const svgP = pt.matrixTransform(fieldSvg.getScreenCTM()?.inverse());
 
       coordsDisplay.textContent = `X: ${svgP.x.toFixed(
         0
       )}, Y: ${-svgP.y.toFixed(0)}`;
     });
-    svg.addEventListener("mouseleave", (e) => {
+    fieldSvg.addEventListener("mouseleave", (e) => {
       coordsDisplay.textContent = ``;
     });
 
     // Settings of field image
     function updateTransform() {
-      svg.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+      fieldSvg.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+      drawingSvg.style.transform = fieldSvg.style.transform;
     }
     container.element.addEventListener(
       "wheel",
       (e) => {
         e.preventDefault();
 
-        const rect = svg.getBoundingClientRect();
+        const rect = fieldSvg.getBoundingClientRect();
 
         const scaleFactor = e.deltaY > 0 ? 1 / 1.1 : 1.1;
         const newScale = Math.min(Math.max(scale * scaleFactor, 0.1), 10);
@@ -74,7 +84,6 @@ const Field: Component = {
           (e.clientX - (rect.left + rect.right) / 2) * (1 - scaleFactor);
         originY +=
           (e.clientY - (rect.top + rect.bottom) / 2) * (1 - scaleFactor);
-        coordsDisplay.textContent = `${e.clientX}, ${rect.left}, ${originX}`;
 
         scale = newScale;
         updateTransform();
@@ -97,8 +106,6 @@ const Field: Component = {
       updateTransform();
     });
 
-    updateTransform();
-
     subscribeToTopic("update_geometry");
     bus.on("update_geometry", (data) => {
       console.log("Update field with new data:", data);
@@ -114,7 +121,24 @@ const Field: Component = {
         centerCircleRadius: data.centerCircleRadius,
         borderSize: data.borderSize,
       };
-      drawField(svg, fieldConfig);
+      drawField(fieldSvg, fieldConfig);
+      updateViewBox(fieldSvg, drawingSvg, fieldConfig);
+      updateTransform();
+    });
+
+    subscribeToTopic("update_sprites");
+    bus.on("update_sprites", (data) => {
+      console.log("New sprites:", data);
+      drawImageSvg(drawingSvg, data);
+    });
+
+    drawField(fieldSvg, fieldConfig);
+    updateViewBox(fieldSvg, drawingSvg, fieldConfig);
+    requestAnimationFrame(() => {
+      const windowRect = container.element.getBoundingClientRect();
+      const fieldRect = fieldSvg.getBoundingClientRect();
+      originX = (windowRect.width - fieldRect.width) / 2;
+      originY = (windowRect.height - fieldRect.height) / 2;
       updateTransform();
     });
   },
@@ -148,24 +172,22 @@ const defaultFieldCfg: FieldConfig = {
   borderSize: 250,
 };
 
-function drawField(svg: SVGSVGElement, cfg: FieldConfig): void {
+function drawField(fieldSvg: SVGSVGElement, cfg: FieldConfig): void {
   const fieldColor = "#27bb27";
   const lineWidth = "10";
   const goalLineWidth = 40;
 
-  while (svg.firstChild) {
-    svg.removeChild(svg.firstChild);
-  }
+  fieldSvg.innerHTML = "";
 
   const svgNS = "http://www.w3.org/2000/svg";
 
-  svg.setAttribute(
+  fieldSvg.setAttribute(
     "viewBox",
     `${-cfg.width / 2 - cfg.borderSize} ${-cfg.height / 2 - cfg.borderSize} ${
       cfg.width + cfg.borderSize * 2
     } ${cfg.height + cfg.borderSize * 2}`
   );
-  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  fieldSvg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
   const field = document.createElementNS(svgNS, "rect");
   field.setAttribute("x", String(-cfg.width / 2 - cfg.borderSize));
@@ -173,7 +195,7 @@ function drawField(svg: SVGSVGElement, cfg: FieldConfig): void {
   field.setAttribute("width", String(cfg.width + cfg.borderSize * 2));
   field.setAttribute("height", String(cfg.height + cfg.borderSize * 2));
   field.setAttribute("fill", fieldColor);
-  svg.appendChild(field);
+  fieldSvg.appendChild(field);
 
   const boarder_rect = document.createElementNS(svgNS, "rect");
   boarder_rect.setAttribute("x", String(-cfg.width / 2));
@@ -183,26 +205,26 @@ function drawField(svg: SVGSVGElement, cfg: FieldConfig): void {
   boarder_rect.setAttribute("fill", fieldColor);
   boarder_rect.setAttribute("stroke", "white");
   boarder_rect.setAttribute("stroke-width", lineWidth);
-  svg.appendChild(boarder_rect);
+  fieldSvg.appendChild(boarder_rect);
 
   const circle = document.createElementNS(svgNS, "circle");
   circle.setAttribute("r", String(cfg.centerCircleRadius));
   circle.setAttribute("fill", fieldColor);
   circle.setAttribute("stroke", "white");
   circle.setAttribute("stroke-width", lineWidth);
-  svg.appendChild(circle);
+  fieldSvg.appendChild(circle);
 
   const center = document.createElementNS(svgNS, "circle");
   center.setAttribute("r", "25");
   center.setAttribute("fill", "white");
-  svg.appendChild(center);
+  fieldSvg.appendChild(center);
 
   const halfLine = document.createElementNS(svgNS, "line");
   halfLine.setAttribute("y1", String(-cfg.height / 2));
   halfLine.setAttribute("y2", String(cfg.height / 2));
   halfLine.setAttribute("stroke", "white");
   halfLine.setAttribute("stroke-width", lineWidth);
-  svg.appendChild(halfLine);
+  fieldSvg.appendChild(halfLine);
 
   const leftGoal = document.createElementNS(svgNS, "rect");
   leftGoal.setAttribute(
@@ -215,7 +237,7 @@ function drawField(svg: SVGSVGElement, cfg: FieldConfig): void {
   leftGoal.setAttribute("fill", fieldColor);
   leftGoal.setAttribute("stroke", cfg.leftGoalColor);
   leftGoal.setAttribute("stroke-width", String(goalLineWidth));
-  svg.appendChild(leftGoal);
+  fieldSvg.appendChild(leftGoal);
 
   const leftPenalty = document.createElementNS(svgNS, "rect");
   leftPenalty.setAttribute("x", String(-cfg.width / 2));
@@ -225,7 +247,7 @@ function drawField(svg: SVGSVGElement, cfg: FieldConfig): void {
   leftPenalty.setAttribute("fill", fieldColor);
   leftPenalty.setAttribute("stroke", "white");
   leftPenalty.setAttribute("stroke-width", lineWidth);
-  svg.appendChild(leftPenalty);
+  fieldSvg.appendChild(leftPenalty);
 
   const rightGoal = document.createElementNS(svgNS, "rect");
   rightGoal.setAttribute("x", String(cfg.width / 2 - goalLineWidth / 2));
@@ -235,7 +257,7 @@ function drawField(svg: SVGSVGElement, cfg: FieldConfig): void {
   rightGoal.setAttribute("fill", fieldColor);
   rightGoal.setAttribute("stroke", cfg.rightGoalColor);
   rightGoal.setAttribute("stroke-width", "50");
-  svg.appendChild(rightGoal);
+  fieldSvg.appendChild(rightGoal);
 
   const rightPenalty = document.createElementNS(svgNS, "rect");
   rightPenalty.setAttribute("x", String(cfg.width / 2 - cfg.penaltyAreaDepth));
@@ -245,7 +267,7 @@ function drawField(svg: SVGSVGElement, cfg: FieldConfig): void {
   rightPenalty.setAttribute("fill", fieldColor);
   rightPenalty.setAttribute("stroke", "white");
   rightPenalty.setAttribute("stroke-width", lineWidth);
-  svg.appendChild(rightPenalty);
+  fieldSvg.appendChild(rightPenalty);
 
   const text = document.createElementNS(svgNS, "text");
   text.setAttribute("x", "0");
@@ -255,5 +277,80 @@ function drawField(svg: SVGSVGElement, cfg: FieldConfig): void {
   text.setAttribute("text-anchor", "middle");
   text.setAttribute("dominant-baseline", "middle");
   text.textContent = "NO DATA";
-  svg.appendChild(text);
+  fieldSvg.appendChild(text);
+}
+
+function updateViewBox(
+  fieldSvg: SVGSVGElement,
+  drawingSvg: SVGSVGElement,
+  cfg: FieldConfig
+) {
+  const x = -cfg.width / 2 - cfg.borderSize;
+  const y = -cfg.height / 2 - cfg.borderSize;
+  const w = cfg.width + cfg.borderSize * 2;
+  const h = cfg.height + cfg.borderSize * 2;
+  fieldSvg.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
+  drawingSvg.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
+}
+
+interface VisionObject {
+  type: string;
+  x: number;
+  y: number;
+  rotation?: number;
+  robot_id?: number;
+  x2?: number;
+  y2?: number;
+  radius?: number;
+}
+
+interface FeedData {
+  [layerName: string]: { data: VisionObject[]; is_visible: boolean };
+}
+
+function drawImageSvg(svg: SVGSVGElement, json: FeedData) {
+  svg.innerHTML = "";
+
+  for (const layerName in json) {
+    const layer = json[layerName];
+    if (!layer.is_visible) continue;
+
+    layer.data.forEach((element) => {
+      switch (element.type) {
+        case "ball": {
+          const circle = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "circle"
+          );
+          circle.setAttribute("cx", element.x.toString());
+          circle.setAttribute("cy", (-element.y).toString());
+          circle.setAttribute("r", "25");
+          circle.setAttribute("fill", "orange");
+          svg.appendChild(circle);
+          break;
+        }
+        case "robot_blu":
+        case "robot_yel": {
+          const robot = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "image"
+          );
+          robot.setAttribute("x", (element.x - 50).toString());
+          robot.setAttribute("y", (-element.y - 50).toString());
+          robot.setAttribute(
+            "transform",
+            `rotate(${((element.rotation || 0) * 180) / Math.PI}, ${
+              element.x
+            }, ${element.y})`
+          );
+          robot.setAttribute("href", `../../images/robot_yel.svg`);
+          svg.appendChild(robot);
+          break;
+        }
+        //TODO add more stuff
+        default:
+          console.warn("Unknown element type:", element.type);
+      }
+    });
+  }
 }
