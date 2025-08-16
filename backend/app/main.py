@@ -37,7 +37,7 @@ sprite_store = BGStore()
 telemetry_store = BGStore()
 
 geometry_lock = Lock()
-geometry_data: dict = {}
+geometry_data: Optional[dict] = None
 geometry_data_updated: bool = True
 
 context = zmq.Context()
@@ -56,7 +56,6 @@ def update_geometry_data(data):
     with geometry_lock:
         global geometry_data, geometry_data_updated
         if geometry_data != data:
-            print("update", geometry_data, data)
             geometry_data = data
             geometry_data_updated = True
 
@@ -70,7 +69,8 @@ def index():
 @sio.on("connect")
 def connect():
     print(f"Client connected")
-    sio.emit("update_geometry", geometry_data)
+    if geometry_data is not None:
+        sio.emit("update_geometry", geometry_data)
     sio.emit("update_version", version)
 
 
