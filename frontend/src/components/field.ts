@@ -126,11 +126,25 @@ const Field: Component = {
       updateTransform();
     });
 
+    let lastSprites: any = null;
+    let isDrawing = false;
     subscribeToTopic("update_sprites");
     bus.on("update_sprites", (data) => {
-      // console.log("New sprites:", data);
-      drawImageSvg(drawingSvg, data);
+      lastSprites = data;
+      requestDraw();
     });
+    function requestDraw() {
+      if (isDrawing) return;
+      isDrawing = true;
+
+      requestAnimationFrame(() => {
+        if (lastSprites) {
+          drawImageSvg(drawingSvg, lastSprites);
+          lastSprites = null;
+        }
+        isDrawing = false;
+      });
+    }
 
     drawField(fieldSvg, fieldConfig);
     updateViewBox(fieldSvg, drawingSvg, fieldConfig);
@@ -269,6 +283,13 @@ function drawField(fieldSvg: SVGSVGElement, cfg: FieldConfig): void {
   rightPenalty.setAttribute("stroke-width", lineWidth);
   fieldSvg.appendChild(rightPenalty);
 
+  const goalLine = document.createElementNS(svgNS, "line");
+  goalLine.setAttribute("x1", String(-cfg.width / 2));
+  goalLine.setAttribute("x2", String(cfg.width / 2));
+  goalLine.setAttribute("stroke", "white");
+  goalLine.setAttribute("stroke-width", lineWidth);
+  fieldSvg.appendChild(goalLine);
+
   const text = document.createElementNS(svgNS, "text");
   text.setAttribute("x", "0");
   text.setAttribute("y", "0");
@@ -276,6 +297,7 @@ function drawField(fieldSvg: SVGSVGElement, cfg: FieldConfig): void {
   text.setAttribute("font-size", "1000");
   text.setAttribute("text-anchor", "middle");
   text.setAttribute("dominant-baseline", "middle");
+  text.setAttribute("dy", "0.1em");
   text.textContent = "NO DATA";
   fieldSvg.appendChild(text);
 }
@@ -293,16 +315,94 @@ function updateViewBox(
   drawingSvg.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
 }
 
-interface VisionObject {
-  type: string;
+interface RobotBase {
   x: number;
   y: number;
   rotation?: number;
-  robot_id?: number;
-  x2?: number;
-  y2?: number;
-  radius?: number;
+  vx?: number;
+  vy?: number;
+  robot_id: number;
 }
+
+interface RobotYel extends RobotBase {
+  type: "robot_yel";
+}
+
+interface RobotBlu extends RobotBase {
+  type: "robot_blu";
+}
+
+interface Ball {
+  type: "ball";
+  x: number;
+  y: number;
+  vx?: number;
+  vy?: number;
+}
+
+interface Line {
+  type: "line";
+  x_list: number[];
+  y_list: number[];
+  color: string;
+  width: number;
+}
+
+interface Arrow {
+  type: "arrow";
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  color: string;
+  width: number;
+}
+
+interface Polygon {
+  type: "polygon";
+  x_list: number[];
+  y_list: number[];
+  color: string;
+  width: number;
+}
+
+interface Rect {
+  type: "rect";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color: string;
+}
+
+interface Circle {
+  type: "circle";
+  x: number;
+  y: number;
+  radius: number;
+  color: string;
+}
+
+interface Text {
+  type: "text";
+  text: string;
+  x: number;
+  y: number;
+  color: string;
+  modifiers?: string;
+  align?: "left" | "center" | "right";
+}
+
+type VisionObject =
+  | RobotYel
+  | RobotBlu
+  | Ball
+  | Line
+  | Arrow
+  | Polygon
+  | Rect
+  | Circle
+  | Text;
 
 interface FeedData {
   [layerName: string]: { data: VisionObject[]; is_visible: boolean };
@@ -310,6 +410,8 @@ interface FeedData {
 
 function drawImageSvg(svg: SVGSVGElement, json: FeedData) {
   svg.innerHTML = "";
+  const svgNS = "http://www.w3.org/2000/svg";
+  const minSpeed = 10;
 
   for (const layerName in json) {
     const layer = json[layerName];
@@ -318,39 +420,232 @@ function drawImageSvg(svg: SVGSVGElement, json: FeedData) {
     layer.data.forEach((element) => {
       switch (element.type) {
         case "ball": {
-          const circle = document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "circle"
-          );
+          if (
+            element.vx &&
+            element.vy &&
+            Math.sqrt(element.vx ** 2 + element.vy ** 2) > minSpeed
+          ) {
+            const color = "#ffb325";
+            const markerId = `arrow-${color.replace("#", "")}`;
+            createArrowMarker(svg, color, markerId);
+
+            const arrow = document.createElementNS(svgNS, "line");
+            arrow.setAttribute("x1", element.x.toString());
+            arrow.setAttribute("y1", (-element.y).toString());
+            arrow.setAttribute("x2", (element.x + element.vx).toString());
+            arrow.setAttribute("y2", (-element.y - element.vy).toString());
+            arrow.setAttribute("stroke-width", "20");
+            arrow.setAttribute("stroke", color);
+            arrow.setAttribute("marker-end", `url(#${markerId})`);
+            svg.appendChild(arrow);
+          }
+          const circle = document.createElementNS(svgNS, "circle");
           circle.setAttribute("cx", element.x.toString());
           circle.setAttribute("cy", (-element.y).toString());
           circle.setAttribute("r", "25");
-          circle.setAttribute("fill", "orange");
+          circle.setAttribute("fill", "#FF7000");
           svg.appendChild(circle);
           break;
         }
-        case "robot_blu":
-        case "robot_yel": {
-          const robot = document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "image"
-          );
-          robot.setAttribute("x", (element.x - 50).toString());
-          robot.setAttribute("y", (-element.y - 50).toString());
+        case "robot_blu": {
+          if (
+            element.vx &&
+            element.vy &&
+            Math.sqrt(element.vx ** 2 + element.vy ** 2) > minSpeed
+          ) {
+            const color = "#ffb325";
+            const markerId = `arrow-${color.replace("#", "")}`;
+            createArrowMarker(svg, color, markerId);
+
+            const arrow = document.createElementNS(svgNS, "line");
+            arrow.setAttribute("x1", element.x.toString());
+            arrow.setAttribute("y1", (-element.y).toString());
+            arrow.setAttribute("x2", (element.x + element.vx).toString());
+            arrow.setAttribute("y2", (-element.y - element.vy).toString());
+            arrow.setAttribute("stroke-width", "20");
+            arrow.setAttribute("stroke", color);
+            arrow.setAttribute("marker-end", `url(#${markerId})`);
+            svg.appendChild(arrow);
+          }
+          const robot = document.createElementNS(svgNS, "image");
+
+          robot.setAttribute("x", (element.x - 90).toString());
+          robot.setAttribute("y", (-element.y - 90).toString());
           robot.setAttribute(
             "transform",
-            `rotate(${((element.rotation || 0) * 180) / Math.PI}, ${
+            `rotate(${-((element.rotation || 0) * 180) / Math.PI}, ${
               element.x
-            }, ${element.y})`
+            }, ${-element.y})`
           );
-          robot.setAttribute("href", `../../images/robot_yel.svg`);
+          robot.setAttribute("width", "160");
+          robot.setAttribute("height", "180");
+          robot.setAttribute("href", "../../images/robot_blu.svg");
           svg.appendChild(robot);
+
+          const text = document.createElementNS(svgNS, "text");
+          text.setAttribute("x", element.x.toString());
+          text.setAttribute("y", (-element.y).toString());
+          text.setAttribute("fill", "white");
+          text.setAttribute("text-anchor", "middle");
+          text.setAttribute("dominant-baseline", "middle");
+          text.setAttribute("dy", "0.1em");
+          text.setAttribute("font-size", "150");
+          text.setAttribute("font-weight", "bold");
+          text.textContent = String(element.robot_id);
+          svg.appendChild(text);
+
           break;
         }
-        //TODO add more stuff
+        case "robot_yel": {
+          if (
+            element.vx &&
+            element.vy &&
+            Math.sqrt(element.vx ** 2 + element.vy ** 2) > minSpeed
+          ) {
+            const color = "#ffb325";
+            const markerId = `arrow-${color.replace("#", "")}`;
+            createArrowMarker(svg, color, markerId);
+
+            const arrow = document.createElementNS(svgNS, "line");
+            arrow.setAttribute("x1", element.x.toString());
+            arrow.setAttribute("y1", (-element.y).toString());
+            arrow.setAttribute("x2", (element.x + element.vx).toString());
+            arrow.setAttribute("y2", (-element.y - element.vy).toString());
+            arrow.setAttribute("stroke-width", "20");
+            arrow.setAttribute("stroke", color);
+            arrow.setAttribute("marker-end", `url(#${markerId})`);
+            svg.appendChild(arrow);
+          }
+          const robot = document.createElementNS(svgNS, "image");
+
+          robot.setAttribute("x", (element.x - 90).toString());
+          robot.setAttribute("y", (-element.y - 90).toString());
+          robot.setAttribute(
+            "transform",
+            `rotate(${-((element.rotation || 0) * 180) / Math.PI}, ${
+              element.x
+            }, ${-element.y})`
+          );
+          robot.setAttribute("width", "160");
+          robot.setAttribute("height", "180");
+          robot.setAttribute("href", "../../images/robot_yel.svg");
+          svg.appendChild(robot);
+
+          const text = document.createElementNS(svgNS, "text");
+          text.setAttribute("x", element.x.toString());
+          text.setAttribute("y", (-element.y).toString());
+          text.setAttribute("fill", "black");
+          text.setAttribute("text-anchor", "middle");
+          text.setAttribute("dominant-baseline", "middle");
+          text.setAttribute("dy", "0.1em");
+          text.setAttribute("font-size", "150");
+          text.setAttribute("font-weight", "bold");
+          text.textContent = String(element.robot_id);
+          svg.appendChild(text);
+
+          break;
+        }
+        case "line": {
+          const points: string[] = [];
+          for (let i = 0; i < element.x_list.length; i++) {
+            points.push(`${element.x_list[i]},${-element.y_list[i]}`);
+          }
+          const polyline = document.createElementNS(svgNS, "polyline");
+          polyline.setAttribute("points", points.join(" "));
+          polyline.setAttribute("fill", "none");
+          polyline.setAttribute("stroke", element.color || "white");
+          polyline.setAttribute("stroke-width", String(element.width || 2));
+          svg.appendChild(polyline);
+          break;
+        }
+        case "arrow": {
+          const line = document.createElementNS(svgNS, "line");
+          line.setAttribute("x1", element.x.toString());
+          line.setAttribute("y1", (-element.y).toString());
+          line.setAttribute("x2", (element.x + element.dx).toString());
+          line.setAttribute("y2", (-(element.y + element.dy)).toString());
+          line.setAttribute("stroke", element.color || "white");
+          line.setAttribute("stroke-width", String(element.width || 2));
+          line.setAttribute("marker-end", "url(#arrowhead)");
+          svg.appendChild(line);
+          break;
+        }
+        case "polygon": {
+          const points: string[] = [];
+          for (let i = 0; i < element.x_list.length; i++) {
+            points.push(`${element.x_list[i]},${-element.y_list[i]}`);
+          }
+          const polygon = document.createElementNS(svgNS, "polygon");
+          polygon.setAttribute("points", points.join(" "));
+          polygon.setAttribute("fill", "none");
+          polygon.setAttribute("stroke", element.color || "white");
+          polygon.setAttribute("stroke-width", String(element.width || 2));
+          svg.appendChild(polygon);
+          break;
+        }
+        case "rect": {
+          const rect = document.createElementNS(svgNS, "rect");
+          rect.setAttribute("x", element.x.toString());
+          rect.setAttribute("y", (-element.y - element.height).toString());
+          rect.setAttribute("width", String(element.width));
+          rect.setAttribute("height", String(element.height));
+          rect.setAttribute("fill", "none");
+          rect.setAttribute("stroke", element.color || "white");
+          svg.appendChild(rect);
+          break;
+        }
+        case "circle": {
+          const circle = document.createElementNS(svgNS, "circle");
+          circle.setAttribute("cx", element.x.toString());
+          circle.setAttribute("cy", (-element.y).toString());
+          circle.setAttribute("r", String(element.radius));
+          circle.setAttribute("fill", "none");
+          circle.setAttribute("stroke", element.color || "white");
+          svg.appendChild(circle);
+          break;
+        }
+        case "text": {
+          const text = document.createElementNS(svgNS, "text");
+          text.textContent = element.text;
+          text.setAttribute("x", element.x.toString());
+          text.setAttribute("y", (-element.y).toString());
+          text.setAttribute("fill", element.color || "white");
+          text.setAttribute("text-anchor", element.align || "left");
+          if (element.modifiers) text.setAttribute("style", element.modifiers);
+          svg.appendChild(text);
+          break;
+        }
         default:
           console.warn("Unknown element type:", element.type);
       }
     });
   }
+}
+
+function createArrowMarker(svg: SVGSVGElement, color: string, id: string) {
+  const existing = svg.querySelector(`#${id}`);
+  if (existing) return;
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const defs =
+    svg.querySelector("defs") ||
+    (() => {
+      const d = document.createElementNS(svgNS, "defs");
+      svg.appendChild(d);
+      return d;
+    })();
+  const marker = document.createElementNS(svgNS, "marker");
+  marker.setAttribute("id", id);
+  marker.setAttribute("markerWidth", "4");
+  marker.setAttribute("markerHeight", "3");
+  marker.setAttribute("refX", "0");
+  marker.setAttribute("refY", "1.5");
+  marker.setAttribute("orient", "auto");
+
+  const polygon = document.createElementNS(svgNS, "polygon");
+  polygon.setAttribute("points", "0 0, 4 1.5, 0 3");
+  polygon.setAttribute("fill", color);
+
+  marker.appendChild(polygon);
+  defs.appendChild(marker);
 }
