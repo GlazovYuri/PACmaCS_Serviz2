@@ -46,7 +46,8 @@ body {
   box-sizing: border-box;
 }
 
-* li {
+* li,
+* button {
   border-bottom: 1px solid #000;
   border-top: 1px solid #333;
 
@@ -57,27 +58,12 @@ body {
   font: 12px Arial, sans-serif;
 }
 
-#toggleButton,
-* button {
-  border-width: 1px;
-  cursor: pointer;
-  padding: 10px 5px;
-  color: #bbb;
-  background: #1a1a1a;
-  font: 12px Arial, sans-serif;
-}
-
-#toggleButton {
-  font: 13px Arial, sans-serif;
-}
-
-#toggleButton:active,
+* li:active,
 * button:active {
   border-left-color: #222;
 }
 
-#menuContainer li:hover,
-#toggleButton:hover,
+* li:hover,
 * button:hover {
   background: #111;
   color: #ccc;
@@ -103,19 +89,9 @@ body {
   box-sizing: border-box;
 }
 
-* select {
-  overflow: auto;
-  background: #1a1a1a;
-  color: #b0b0b0;
-  border: 1px solid #222;
-  box-sizing: border-box;
-  margin: 5px;
-  position: relative;
-}
-
 * pre {
   overflow: auto;
-  width: 99.9%;
+  width: 99.8%;
   background: #1a1a1a;
   color: #b0b0b0;
   padding: 5px;
