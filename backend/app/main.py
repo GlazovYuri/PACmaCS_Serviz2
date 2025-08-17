@@ -1,4 +1,5 @@
 from multiprocessing import Lock
+import time
 from typing import Optional
 from flask import Flask, render_template
 from flask_socketio import SocketIO
@@ -36,6 +37,9 @@ import zmq
 sprite_store = BGStore()
 telemetry_store = BGStore()
 
+feed_lock = Lock()
+last_feed_update = time.time()
+
 geometry_lock = Lock()
 geometry_data: Optional[dict] = None
 geometry_data_updated: bool = True
@@ -45,9 +49,12 @@ s_signals = context.socket(zmq.PUB)
 s_signals.connect(config["ether"]["s_signals_sub_url"])
 
 
-def update_layer(layer_name, data):
+def update_layer(layer_name: str, data):
     sprite_store.write({layer_name: data})
-
+    if layer_name == "vision_feed":
+        with feed_lock:
+            global last_feed_update
+            last_feed_update = time.time()
 
 def update_telemetry_data(data):
     telemetry_store.write(data)
@@ -202,7 +209,11 @@ def relay_data(sio: SocketIO):
                 else:
                     raise
         
-        sio.emit("update_sprites", sprite_store.fetch())
+        global last_feed_update
+        sprites_data = sprite_store.fetch()
+        sprites_data["_time_from_update"] = time.time() - last_feed_update
+        sio.emit("update_sprites", sprites_data)
+
         sio.emit("update_telemetry", telemetry_store.fetch())
         
         global geometry_data_updated, geometry_data

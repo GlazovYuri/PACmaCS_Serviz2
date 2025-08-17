@@ -18,15 +18,26 @@ const Field: Component = {
     fieldSvg.style.display = "block";
     fieldSvg.style.userSelect = "none";
     fieldSvg.style.touchAction = "none";
-
-    fieldSvg.setAttribute("preserveAspectRatio", "xMidYMid meet");
     container.element.append(fieldSvg);
+
+    const textSvg = document.createElementNS(svgNS, "svg");
+    textSvg.style.position = "absolute";
+    textSvg.style.top = "0";
+    textSvg.style.left = "0";
+    textSvg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    textSvg.style.display = "block";
+    textSvg.style.userSelect = "none";
+    textSvg.style.touchAction = "none";
+    container.element.append(textSvg);
 
     const drawingSvg = document.createElementNS(svgNS, "svg");
     drawingSvg.style.position = "absolute";
     drawingSvg.style.top = "0";
     drawingSvg.style.left = "0";
     drawingSvg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    drawingSvg.style.display = "block";
+    drawingSvg.style.userSelect = "none";
+    drawingSvg.style.touchAction = "none";
     container.element.append(drawingSvg);
 
     // Create display with coords
@@ -69,6 +80,7 @@ const Field: Component = {
     function updateTransform() {
       fieldSvg.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
       drawingSvg.style.transform = fieldSvg.style.transform;
+      textSvg.style.transform = fieldSvg.style.transform;
     }
     container.element.addEventListener(
       "wheel",
@@ -122,7 +134,7 @@ const Field: Component = {
         borderSize: data.borderSize,
       };
       drawField(fieldSvg, fieldConfig);
-      updateViewBox(fieldSvg, drawingSvg, fieldConfig);
+      updateViewBox([drawingSvg, fieldSvg, textSvg], fieldConfig);
       updateTransform();
     });
 
@@ -132,6 +144,24 @@ const Field: Component = {
     bus.on("update_sprites", (data) => {
       lastSprites = data;
       requestDraw();
+
+      if ("_time_from_update" in data) {
+        const time_from_update = data["_time_from_update"];
+        if (time_from_update < 1) {
+          textSvg.innerHTML = "";
+        } else if (textSvg.innerHTML == "") {
+          const text = document.createElementNS(svgNS, "text");
+          text.setAttribute("x", "0");
+          text.setAttribute("y", "0");
+          text.setAttribute("fill", "#88dd00");
+          text.setAttribute("font-size", "1000");
+          text.setAttribute("text-anchor", "middle");
+          text.setAttribute("dominant-baseline", "middle");
+          text.setAttribute("dy", "0.1em");
+          text.textContent = "NO DATA";
+          textSvg.appendChild(text);
+        }
+      }
     });
     function requestDraw() {
       if (isDrawing) return;
@@ -147,7 +177,7 @@ const Field: Component = {
     }
 
     drawField(fieldSvg, fieldConfig);
-    updateViewBox(fieldSvg, drawingSvg, fieldConfig);
+    updateViewBox([drawingSvg, fieldSvg, textSvg], fieldConfig);
     requestAnimationFrame(() => {
       const windowRect = container.element.getBoundingClientRect();
       const fieldRect = fieldSvg.getBoundingClientRect();
@@ -289,30 +319,16 @@ function drawField(fieldSvg: SVGSVGElement, cfg: FieldConfig): void {
   goalLine.setAttribute("stroke", "white");
   goalLine.setAttribute("stroke-width", lineWidth);
   fieldSvg.appendChild(goalLine);
-
-  const text = document.createElementNS(svgNS, "text");
-  text.setAttribute("x", "0");
-  text.setAttribute("y", "0");
-  text.setAttribute("fill", "#88dd00");
-  text.setAttribute("font-size", "1000");
-  text.setAttribute("text-anchor", "middle");
-  text.setAttribute("dominant-baseline", "middle");
-  text.setAttribute("dy", "0.1em");
-  text.textContent = "NO DATA";
-  fieldSvg.appendChild(text);
 }
 
-function updateViewBox(
-  fieldSvg: SVGSVGElement,
-  drawingSvg: SVGSVGElement,
-  cfg: FieldConfig
-) {
+function updateViewBox(Svgs: SVGSVGElement[], cfg: FieldConfig) {
   const x = -cfg.width / 2 - cfg.borderSize;
   const y = -cfg.height / 2 - cfg.borderSize;
   const w = cfg.width + cfg.borderSize * 2;
   const h = cfg.height + cfg.borderSize * 2;
-  fieldSvg.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
-  drawingSvg.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
+  Svgs.forEach((SVG) => {
+    SVG.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
+  });
 }
 
 interface RobotBase {
@@ -616,6 +632,7 @@ function drawImageSvg(svg: SVGSVGElement, json: FeedData) {
           break;
         }
         default:
+          // @ts-ignore
           console.warn("Unknown element type:", element.type);
       }
     });
