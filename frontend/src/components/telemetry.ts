@@ -1,6 +1,6 @@
 import Component from "../loadComponents";
 import { bus, subscribeToTopic, sendMessage } from "../socketManager";
-import CustomDropdown from "../customDropdown";
+import { CustomDropdown } from "../customButtons";
 
 const Telemetry: Component = {
   name: "Telemetry",

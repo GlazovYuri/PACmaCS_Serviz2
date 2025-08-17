@@ -1,6 +1,5 @@
 type Option = {
   value: string;
-  label?: string;
 };
 
 type DropdownProps = {
@@ -9,7 +8,7 @@ type DropdownProps = {
   onChange?: (value: string) => void;
 };
 
-export default class CustomDropdown {
+export class CustomDropdown {
   element: HTMLDivElement;
   private options: Option[];
   private selected: string;
@@ -69,10 +68,11 @@ export default class CustomDropdown {
         this.dropdownList.style.display = "none";
       }
     });
+    this.updateOptions(options);
   }
 
   private getLabel(value: string) {
-    return this.options.find((o) => o.value === value)?.label || value;
+    return value;
   }
 
   public updateOptions(newOptions: Option[]) {
@@ -124,5 +124,42 @@ export default class CustomDropdown {
 
   public getValue() {
     return this.selected;
+  }
+}
+export class NumberInput {
+  element: HTMLDivElement;
+  private input: HTMLInputElement;
+  private upButton: HTMLButtonElement;
+  private downButton: HTMLButtonElement;
+
+  constructor(initialValue: number = 0) {
+    this.element = document.createElement("div");
+    this.element.style.position = "relative";
+    this.element.style.display = "flex";
+    this.element.style.height = "30px";
+    this.element.style.width = "120px";
+    this.element.style.userSelect = "none";
+
+    const input = document.createElement("input");
+    input.style.color = "#b0b0b0";
+    input.style.background = "#1a1a1a";
+    input.style.padding = "5px";
+    input.style.border = "1px solid #222";
+    input.type = "number";
+    input.value = "0";
+    input.min = "0";
+    input.max = "15";
+    input.style.width = "100%";
+    input.style.font = "18px Arial, sans-serif";
+    input.style.outline = "none";
+
+    input.addEventListener("input", () => {
+      let value = Number(input.value);
+      if (isNaN(value)) value = 0;
+      value = Math.min(Math.max(value, 0), 15);
+      input.value = value.toString();
+    });
+
+    this.element.appendChild(input);
   }
 }
