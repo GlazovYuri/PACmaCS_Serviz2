@@ -91,6 +91,9 @@ const DrawingLayers: Component = {
         if (name && !validNames.has(name)) label.remove();
       }
     });
+    clearButton.addEventListener("click", () => {
+      sendMessage("clear_layers", "");
+    });
   },
 };
 
