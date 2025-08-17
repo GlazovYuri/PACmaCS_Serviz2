@@ -27,7 +27,7 @@ export default class CustomDropdown {
     this.element.style.display = "flex";
     this.element.style.flexDirection = "row";
     this.element.style.height = "30px";
-    this.element.style.width = "calc(100% - 120px)"; // растягивается по доступной ширине родителя
+    this.element.style.width = "calc(100% - 120px)";
     this.element.style.userSelect = "none";
 
     const selectedDiv = document.createElement("div");

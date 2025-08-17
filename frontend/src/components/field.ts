@@ -128,7 +128,7 @@ const Field: Component = {
 
     subscribeToTopic("update_sprites");
     bus.on("update_sprites", (data) => {
-      console.log("New sprites:", data);
+      // console.log("New sprites:", data);
       drawImageSvg(drawingSvg, data);
     });
 
