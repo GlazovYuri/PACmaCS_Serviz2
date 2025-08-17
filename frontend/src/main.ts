@@ -50,6 +50,11 @@ if (menuContainerElement && layoutElement) {
   });
 
   goldenLayout.on("stateChanged", function () {
+    // Delete popout buttons
+    document.querySelectorAll(".lm_popout").forEach((el) => {
+      el.remove();
+    });
+
     const state = goldenLayout.saveLayout();
     localStorage.setItem("savedState", JSON.stringify(state));
   });
