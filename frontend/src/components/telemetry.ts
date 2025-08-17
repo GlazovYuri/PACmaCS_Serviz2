@@ -12,7 +12,7 @@ const Telemetry: Component = {
     const wrapper = document.createElement("div");
     wrapper.style.display = "flex";
     wrapper.style.alignItems = "center";
-    wrapper.style.marginBottom = "10px";
+    wrapper.style.padding = "5px";
 
     const selectDropdown = new CustomDropdown({
       options: [],
@@ -21,15 +21,16 @@ const Telemetry: Component = {
         telemetryBox.textContent = getText(currentTopic);
       },
     });
+    wrapper.appendChild(selectDropdown.element);
+
     const clearButton = document.createElement("button");
     clearButton.textContent = "Clear telemetry";
     clearButton.style.height = "30px";
     clearButton.style.width = "100px";
     clearButton.style.flex = "0 0 auto";
     clearButton.style.margin = "1px 10px 0px 10px ";
-
-    wrapper.appendChild(selectDropdown.element);
     wrapper.appendChild(clearButton);
+
     container.element.appendChild(wrapper);
 
     const telemetryBox = document.createElement("pre");

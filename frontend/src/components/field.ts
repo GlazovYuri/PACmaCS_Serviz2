@@ -28,6 +28,7 @@ const Field: Component = {
     textSvg.style.display = "block";
     textSvg.style.userSelect = "none";
     textSvg.style.touchAction = "none";
+    textSvg.style.pointerEvents = "none";
     container.element.append(textSvg);
 
     const drawingSvg = document.createElementNS(svgNS, "svg");
@@ -38,6 +39,7 @@ const Field: Component = {
     drawingSvg.style.display = "block";
     drawingSvg.style.userSelect = "none";
     drawingSvg.style.touchAction = "none";
+    drawingSvg.style.pointerEvents = "none";
     container.element.append(drawingSvg);
 
     // Create display with coords
@@ -120,7 +122,7 @@ const Field: Component = {
 
     subscribeToTopic("update_geometry");
     bus.on("update_geometry", (data) => {
-      console.log("Update field with new data:", data);
+      // console.log("Update field with new data:", data);
       fieldConfig = {
         width: data.length,
         height: data.width,
@@ -575,14 +577,18 @@ function drawImageSvg(svg: SVGSVGElement, json: FeedData) {
           break;
         }
         case "arrow": {
+          const color = element.color;
+          const markerId = `arrow-${color.replace("#", "")}`;
+          createArrowMarker(svg, color, markerId);
+
           const line = document.createElementNS(svgNS, "line");
           line.setAttribute("x1", element.x.toString());
           line.setAttribute("y1", (-element.y).toString());
           line.setAttribute("x2", (element.x + element.dx).toString());
           line.setAttribute("y2", (-(element.y + element.dy)).toString());
-          line.setAttribute("stroke", element.color || "white");
+          line.setAttribute("stroke", color);
           line.setAttribute("stroke-width", String(element.width || 2));
-          line.setAttribute("marker-end", "url(#arrowhead)");
+          line.setAttribute("marker-end", `url(#${markerId})`);
           svg.appendChild(line);
           break;
         }
@@ -593,9 +599,9 @@ function drawImageSvg(svg: SVGSVGElement, json: FeedData) {
           }
           const polygon = document.createElementNS(svgNS, "polygon");
           polygon.setAttribute("points", points.join(" "));
-          polygon.setAttribute("fill", "none");
+          polygon.setAttribute("fill", element.color);
           polygon.setAttribute("stroke", element.color || "white");
-          polygon.setAttribute("stroke-width", String(element.width || 2));
+          polygon.setAttribute("stroke-width", String(element.width));
           svg.appendChild(polygon);
           break;
         }
@@ -605,8 +611,7 @@ function drawImageSvg(svg: SVGSVGElement, json: FeedData) {
           rect.setAttribute("y", (-element.y - element.height).toString());
           rect.setAttribute("width", String(element.width));
           rect.setAttribute("height", String(element.height));
-          rect.setAttribute("fill", "none");
-          rect.setAttribute("stroke", element.color || "white");
+          rect.setAttribute("fill", element.color);
           svg.appendChild(rect);
           break;
         }
@@ -615,8 +620,7 @@ function drawImageSvg(svg: SVGSVGElement, json: FeedData) {
           circle.setAttribute("cx", element.x.toString());
           circle.setAttribute("cy", (-element.y).toString());
           circle.setAttribute("r", String(element.radius));
-          circle.setAttribute("fill", "none");
-          circle.setAttribute("stroke", element.color || "white");
+          circle.setAttribute("fill", "element.color");
           svg.appendChild(circle);
           break;
         }

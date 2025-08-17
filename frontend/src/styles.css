@@ -60,8 +60,9 @@ body {
   font: 12px Arial, sans-serif;
 }
 
-* li:active,
 * button:active {
+  border-bottom-color: #333;
+  border-top-color: #000;
   border-left-color: #222;
 }
 
@@ -108,4 +109,8 @@ body {
   font-weight: 700;
   padding: 5px;
   background: #1f1f1f;
+}
+
+input[type="checkbox"] {
+  accent-color: #b0b0b0;
 }

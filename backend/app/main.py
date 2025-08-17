@@ -36,6 +36,7 @@ import zmq
 
 sprite_store = BGStore()
 telemetry_store = BGStore()
+visibility = {}
 
 feed_lock = Lock()
 last_feed_update = time.time()
@@ -50,6 +51,10 @@ s_signals.connect(config["ether"]["s_signals_sub_url"])
 
 
 def update_layer(layer_name: str, data):
+    if layer_name not in visibility:
+        visibility[layer_name] = data["is_visible"]
+    else:
+        data["is_visible"] = visibility[layer_name]
     sprite_store.write({layer_name: data})
     if layer_name == "vision_feed":
         with feed_lock:
@@ -98,6 +103,7 @@ def send_signal(data):
 
 @sio.on("clear_layers")
 def clear_layers(data):
+    visibility.clear()
     sprite_store.clear()
 
 
@@ -105,6 +111,9 @@ def clear_layers(data):
 def clear_telemetry(data):
     telemetry_store.clear()
 
+@sio.on("toggle_layer_visibility")
+def toggle_layer_visibility(key):
+    visibility[key] = not visibility[key]
 
 def update_sprites():
     print("Update sprites enter")
@@ -211,6 +220,9 @@ def relay_data(sio: SocketIO):
         
         global last_feed_update
         sprites_data = sprite_store.fetch()
+        for layer_name in visibility:
+            sprites_data[layer_name]["is_visible"] = visibility[layer_name]
+            
         sprites_data["_time_from_update"] = time.time() - last_feed_update
         sio.emit("update_sprites", sprites_data)
 
