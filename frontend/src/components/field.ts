@@ -58,6 +58,10 @@ const Field: Component = {
     let scale = 0.9;
     let originX = 0;
     let originY = 0;
+
+    let isDrawingArrow = false;
+    let draggingArrowX = 0;
+    let draggingArrowY = 0;
     let isDragging = false;
     let dragStartX = 0;
     let dragStartY = 0;
@@ -105,19 +109,41 @@ const Field: Component = {
       { passive: false }
     );
     container.element.addEventListener("mousedown", (e) => {
-      e.preventDefault();
+      if (e.altKey) {
+        isDrawingArrow = true;
+        const pt = fieldSvg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const svgP = pt.matrixTransform(fieldSvg.getScreenCTM()?.inverse());
+        dragStartX = svgP.x;
+        dragStartY = svgP.y;
+        draggingArrowX = dragStartX;
+        draggingArrowY = dragStartY;
+      } else {
+        dragStartX = e.clientX - originX;
+        dragStartY = e.clientY - originY;
+      }
       isDragging = true;
-      dragStartX = e.clientX - originX;
-      dragStartY = e.clientY - originY;
     });
     window.addEventListener("mouseup", () => {
       isDragging = false;
+      isDrawingArrow = false;
+      finishArrow();
     });
     window.addEventListener("mousemove", (e) => {
       if (!isDragging) return;
-      originX = e.clientX - dragStartX;
-      originY = e.clientY - dragStartY;
-      updateTransform();
+      if (isDrawingArrow) {
+        const pt = fieldSvg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const svgP = pt.matrixTransform(fieldSvg.getScreenCTM()?.inverse());
+        draggingArrowX = svgP.x;
+        draggingArrowY = svgP.y;
+      } else {
+        originX = e.clientX - dragStartX;
+        originY = e.clientY - dragStartY;
+        updateTransform();
+      }
     });
 
     subscribeToTopic("update_geometry");
@@ -172,6 +198,15 @@ const Field: Component = {
       requestAnimationFrame(() => {
         if (lastSprites) {
           drawImageSvg(drawingSvg, lastSprites);
+          if (isDrawingArrow) {
+            updateArrow(
+              drawingSvg,
+              dragStartX,
+              dragStartY,
+              draggingArrowX,
+              draggingArrowY
+            );
+          }
           lastSprites = null;
         }
         isDrawing = false;
@@ -187,6 +222,62 @@ const Field: Component = {
       originY = (windowRect.height - fieldRect.height) / 2;
       updateTransform();
     });
+
+    let arrowLine: SVGLineElement | null = null;
+
+    function updateArrow(
+      svg: SVGSVGElement,
+      x1: number,
+      y1: number,
+      x2: number,
+      y2: number
+    ) {
+      const color = "#ffb325";
+      const markerId = `arrow-${color.replace("#", "")}`;
+      createArrowMarker(svg, color, markerId);
+
+      arrowLine = document.createElementNS(svgNS, "line");
+      arrowLine.setAttribute("x1", x1.toString());
+      arrowLine.setAttribute("y1", y1.toString());
+      arrowLine.setAttribute("x2", (x1 * 2 - x2).toString());
+      arrowLine.setAttribute("y2", (y1 * 2 - y2).toString());
+      arrowLine.setAttribute("stroke", color);
+      arrowLine.setAttribute("stroke-width", "20");
+      arrowLine.setAttribute("marker-end", `url(#${markerId})`);
+      svg.appendChild(arrowLine);
+
+      const speed = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+      if (speed > 100) {
+        const deltaY = y2 < y1 ? -100 : 100;
+
+        const text = document.createElementNS(svgNS, "text");
+        text.textContent = `${(speed / 1000).toFixed(1)} m/s`;
+        text.setAttribute("x", x1.toString());
+        text.setAttribute("y", (y1 + deltaY).toString());
+        text.setAttribute("fill", color);
+        text.setAttribute("font-size", "200");
+        text.setAttribute("font-weight", "bold");
+        text.setAttribute("text-anchor", "middle");
+        text.setAttribute("dominant-baseline", "middle");
+        svg.appendChild(text);
+      }
+    }
+
+    function finishArrow() {
+      if (!arrowLine) return;
+
+      const x = dragStartX;
+      const y = dragStartY;
+      const vx = dragStartX - draggingArrowX;
+      const vy = dragStartY - draggingArrowY;
+      sendMessage("send_signal", {
+        transnet: "set_ball",
+        data: { x: x, y: -y, vx: vx, vy: -vy },
+      });
+      console.log(vx, vy);
+
+      arrowLine = null;
+    }
   },
 };
 
