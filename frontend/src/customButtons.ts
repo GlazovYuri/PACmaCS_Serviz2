@@ -30,7 +30,7 @@ export class CustomDropdown {
     this.element.style.userSelect = "none";
 
     const selectedDiv = document.createElement("div");
-    selectedDiv.textContent = this.getLabel(this.selected);
+    selectedDiv.textContent = this.selected;
     selectedDiv.style.padding = "5px 10px";
     selectedDiv.style.color = "#b0b0b0";
     selectedDiv.style.background = "#1a1a1a";
@@ -71,10 +71,6 @@ export class CustomDropdown {
     this.updateOptions(options);
   }
 
-  private getLabel(value: string) {
-    return value;
-  }
-
   public updateOptions(newOptions: Option[]) {
     const existingValues = this.options.map((o) => o.value);
     const incomingValues = newOptions.map((o) => o.value);
@@ -91,14 +87,12 @@ export class CustomDropdown {
       this.selected = this.options[0]?.value || "";
     }
 
-    (this.element.firstChild as HTMLDivElement).textContent = this.getLabel(
-      this.selected
-    );
+    (this.element.firstChild as HTMLDivElement).textContent = this.selected;
 
     this.dropdownList.innerHTML = "";
     this.options.forEach((opt) => {
       const div = document.createElement("div");
-      div.textContent = this.getLabel(opt.value);
+      div.textContent = opt.value;
       div.style.padding = "5px 10px";
       div.style.cursor = "pointer";
 
@@ -110,9 +104,7 @@ export class CustomDropdown {
       });
       div.addEventListener("mouseup", () => {
         this.selected = opt.value;
-        (this.element.firstChild as HTMLDivElement).textContent = this.getLabel(
-          this.selected
-        );
+        (this.element.firstChild as HTMLDivElement).textContent = this.selected;
         this.dropdownList.style.display = "none";
         this.isOpen = false;
         this.onChange?.(this.selected);
@@ -126,6 +118,7 @@ export class CustomDropdown {
     return this.selected;
   }
 }
+
 export class NumberInput {
   element: HTMLDivElement;
   private input: HTMLInputElement;
@@ -140,26 +133,29 @@ export class NumberInput {
     this.element.style.width = "120px";
     this.element.style.userSelect = "none";
 
-    const input = document.createElement("input");
-    input.style.color = "#b0b0b0";
-    input.style.background = "#1a1a1a";
-    input.style.padding = "5px";
-    input.style.border = "1px solid #222";
-    input.type = "number";
-    input.value = "0";
-    input.min = "0";
-    input.max = "15";
-    input.style.width = "100%";
-    input.style.font = "18px Arial, sans-serif";
-    input.style.outline = "none";
+    this.input = document.createElement("input");
+    this.input.style.color = "#b0b0b0";
+    this.input.style.background = "#1a1a1a";
+    this.input.style.padding = "5px";
+    this.input.style.border = "1px solid #222";
+    this.input.type = "number";
+    this.input.value = "0";
+    this.input.min = "0";
+    this.input.max = "15";
+    this.input.style.width = "100%";
+    this.input.style.font = "18px Arial, sans-serif";
+    this.input.style.outline = "none";
 
-    input.addEventListener("input", () => {
-      let value = Number(input.value);
+    this.input.addEventListener("input", () => {
+      let value = Number(this.input.value);
       if (isNaN(value)) value = 0;
       value = Math.min(Math.max(value, 0), 15);
-      input.value = value.toString();
+      this.input.value = value.toString();
     });
 
-    this.element.appendChild(input);
+    this.element.appendChild(this.input);
+  }
+  public getValue() {
+    return this.input.value;
   }
 }
