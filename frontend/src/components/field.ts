@@ -96,15 +96,16 @@ const Field: Component = {
         const rect = fieldSvg.getBoundingClientRect();
 
         const scaleFactor = e.deltaY > 0 ? 1 / 1.1 : 1.1;
-        const newScale = Math.min(Math.max(scale * scaleFactor, 0.1), 10);
+        const newScale = scale * scaleFactor;
+        if (newScale > 0.3 && newScale < 10) {
+          originX +=
+            (e.clientX - (rect.left + rect.right) / 2) * (1 - scaleFactor);
+          originY +=
+            (e.clientY - (rect.top + rect.bottom) / 2) * (1 - scaleFactor);
 
-        originX +=
-          (e.clientX - (rect.left + rect.right) / 2) * (1 - scaleFactor);
-        originY +=
-          (e.clientY - (rect.top + rect.bottom) / 2) * (1 - scaleFactor);
-
-        scale = newScale;
-        updateTransform();
+          scale = newScale;
+          updateTransform();
+        }
       },
       { passive: false }
     );
@@ -497,9 +498,10 @@ interface Text {
   text: string;
   x: number;
   y: number;
+  font_size: number;
   color: string;
   modifiers?: string;
-  align?: "left" | "center" | "right";
+  align?: "left" | "middle" | "right";
 }
 
 type VisionObject =
@@ -522,7 +524,7 @@ function drawImageSvg(svg: SVGSVGElement, json: FeedData) {
   const svgNS = "http://www.w3.org/2000/svg";
   const minSpeed = 10;
 
-  for (const layerName in json) {
+  for (const layerName of Object.keys(json).reverse()) {
     const layer = json[layerName];
     if (!layer.is_visible) continue;
 
@@ -711,7 +713,7 @@ function drawImageSvg(svg: SVGSVGElement, json: FeedData) {
           circle.setAttribute("cx", element.x.toString());
           circle.setAttribute("cy", (-element.y).toString());
           circle.setAttribute("r", String(element.radius));
-          circle.setAttribute("fill", "element.color");
+          circle.setAttribute("fill", element.color);
           svg.appendChild(circle);
           break;
         }
@@ -721,7 +723,8 @@ function drawImageSvg(svg: SVGSVGElement, json: FeedData) {
           text.setAttribute("x", element.x.toString());
           text.setAttribute("y", (-element.y).toString());
           text.setAttribute("fill", element.color || "white");
-          text.setAttribute("text-anchor", element.align || "left");
+          text.setAttribute("font-size", String(element.font_size));
+          text.setAttribute("text-anchor", element.align || "middle");
           if (element.modifiers) text.setAttribute("style", element.modifiers);
           svg.appendChild(text);
           break;
